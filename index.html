@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Life Evolution</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="panel controls-panel">
+        <h1>Life Evolution</h1>
+
+        <div class="section">
+          <h2>Parâmetros</h2>
+          <div class="field-grid">
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>População inicial</span>
+                  <span class="info-badge" title="Define quantos seres nascem na simulação e influencia diretamente a pressão competitiva do ambiente.">i</span>
+                </span>
+                <input id="initialPopulation" type="number" min="2" max="200" value="20" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Energia inicial</span>
+                  <span class="info-badge" title="Determina a energia com que cada ser começa, afetando sua sobrevivência e a chance de reproduzir cedo.">i</span>
+                </span>
+                <input id="initialEnergy" type="number" min="10" max="200" value="80" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Vida inicial</span>
+                  <span class="info-badge" title="É o tempo máximo de vida do indivíduo; quando chega a zero, ele morre mesmo que ainda tenha energia.">i</span>
+                </span>
+                <input id="initialLife" type="number" min="20" max="500" value="180" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Custo por tick</span>
+                  <span class="info-badge" title="Quanto de energia cada ser perde a cada passo da simulação; controla a pressão de sobrevivência.">i</span>
+                </span>
+                <input id="energyCost" type="number" min="0.01" max="5" step="0.01" value="0.25" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Energia da comida min</span>
+                  <span class="info-badge" title="Energia mínima da comida gerada; influencia quanto a população pode se sustentar sem morrer de fome.">i</span>
+                </span>
+                <input id="foodEnergyMin" type="number" min="5" max="200" value="20" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Energia da comida max</span>
+                  <span class="info-badge" title="Energia máxima das comidas, definindo o quão rica a alimentação pode ser em cada ponto do mapa.">i</span>
+                </span>
+                <input id="foodEnergyMax" type="number" min="10" max="300" value="80" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Mutação</span>
+                  <span class="info-badge" title="Chance de alterar os pesos da rede neural; afeta a diversidade e a evolução da população.">i</span>
+                </span>
+                <input id="mutationRate" type="number" min="0" max="1" step="0.01" value="0.08" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Similaridade cruzamento</span>
+                  <span class="info-badge" title="Limiar usado para decidir se dois seres pertencem à mesma espécie e podem se reproduzir sexualmente.">i</span>
+                </span>
+                <input id="crossoverSimilarity" type="number" min="0" max="1" step="0.01" value="0.7" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Limite de reprodução</span>
+                  <span class="info-badge" title="Energia mínima para gerar uma reprodução assexuada; controla quando a população cresce rapidamente.">i</span>
+                </span>
+                <input id="reproductionThreshold" type="number" min="20" max="300" value="110" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Custo reprodução</span>
+                  <span class="info-badge" title="Energia gasta na reprodução; impacto direto no ciclo de vida e na sobrevivência dos pais.">i</span>
+                </span>
+                <input id="reproductionCost" type="number" min="0" max="200" value="45" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Energia da cria</span>
+                  <span class="info-badge" title="Energia inicial do descendente; define quão forte a nova geração começa na simulação.">i</span>
+                </span>
+                <input id="childEnergy" type="number" min="10" max="200" value="45" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Fator predador</span>
+                  <span class="info-badge" title="Multiplicador mínimo para que um indivíduo ataque outro; mais alto torna a predação mais difícil.">i</span>
+                </span>
+                <input id="predatorFactor" type="number" min="1" max="5" step="0.1" value="1.8" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Máx. comida</span>
+                  <span class="info-badge" title="Quantidade máxima de alimentos simultâneos; afeta a escassez e a competitividade por recursos.">i</span>
+                </span>
+                <input id="maxFood" type="number" min="10" max="200" value="45" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Spawn comida</span>
+                  <span class="info-badge" title="Intervalo entre novas aparições de comida; controla a renovação dos recursos na tela.">i</span>
+                </span>
+                <input id="foodSpawnRate" type="number" min="0" max="100" value="5" />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section actions">
+          <button id="newSimulationBtn">Nova população</button>
+          <button id="togglePauseBtn">Pausar</button>
+        </div>
+
+        <div class="section">
+          <h2>Tuning</h2>
+          <div class="actions stacked-actions">
+            <button id="benchmarkBtn">Executar tuning (100)</button>
+            <button id="balancedDefaultsBtn" class="secondary">Resetar para equilibrado</button>
+          </div>
+          <p id="tuningSummary" class="tuning-summary">
+            <span id="benchmarkStatus" class="status-indicator idle">Pronto</span>
+            <span id="tuningMessage">Ainda não houve benchmarking. O sistema usa o perfil padrão inicial.</span>
+          </p>
+        </div>
+
+        <div class="section">
+          <h2>Salvar população</h2>
+          <div class="save-box">
+            <input id="saveName" type="text" placeholder="Nome do save" />
+            <button id="saveBtn">Salvar</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Carregar save</h2>
+          <select id="saveList"></select>
+          <div class="save-actions">
+            <button id="loadSaveBtn">Carregar</button>
+            <button id="deleteSaveBtn" class="danger">Excluir</button>
+          </div>
+        </div>
+      </aside>
+
+      <main class="viewport-panel">
+        <div class="stats-bar">
+          <span id="populationStat">População: 0</span>
+          <span id="foodStat">Comida: 0</span>
+          <span id="generationStat">Geração: 0</span>
+          <span id="predationStat">Predação: 0</span>
+          <span id="asexualStat">Reprodução assexuada: 0</span>
+          <span id="sexualStat">Reprodução sexuada: 0</span>
+        </div>
+        <canvas id="world" width="980" height="640"></canvas>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
