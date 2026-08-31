@@ -4,8 +4,8 @@ const STORAGE_BALANCED_KEY = 'life_simulation_balanced_v1';
 const WORLD_WIDTH = 980;
 const WORLD_HEIGHT = 640;
 const INPUT_SIZE = 9;
-const HIDDEN_SIZE = 6;
-const OUTPUT_SIZE = 7;
+const HIDDEN_SIZE = 8;
+const OUTPUT_SIZE = 8;
 const GENE_COUNT = INPUT_SIZE * HIDDEN_SIZE + HIDDEN_SIZE + HIDDEN_SIZE * OUTPUT_SIZE + OUTPUT_SIZE;
 const BENCHMARK_MAX_POPULATION = 120;
 
@@ -13,36 +13,44 @@ const DEFAULT_CONFIG = {
   worldWidth: WORLD_WIDTH,
   worldHeight: WORLD_HEIGHT,
   initialPopulation: 20,
-  initialEnergy: 80,
+  initialEnergyPercent: 0.53,
   initialLife: 180,
+  baseEnergy: 150,
   energyCost: 0.25,
-  foodEnergyMin: 20,
-  foodEnergyMax: 80,
+  foodEnergyMinPercent: 0.13,
+  foodEnergyMaxPercent: 0.53,
   mutationRate: 0.08,
   crossoverSimilarity: 0.7,
-  reproductionThreshold: 110,
-  reproductionCost: 45,
-  childEnergy: 45,
+  reproductionThresholdPercent: 0.73,
+  asexualReproductionCostPercent: 0.30,
+  sexualReproductionCostPercent: 0.15,
+  childEnergyPercent: 0.30,
   predatorFactor: 1.8,
   maxFood: 45,
   foodSpawnRate: 5,
+  jumpEnergyPercent: 0.10,
+  jumpDistanceMultiplier: 3,
 };
 
 const BALANCED_DEFAULTS = {
   initialPopulation: 22,
-  initialEnergy: 78,
+  initialEnergyPercent: 0.52,
   initialLife: 190,
+  baseEnergy: 150,
   energyCost: 0.22,
-  foodEnergyMin: 18,
-  foodEnergyMax: 72,
+  foodEnergyMinPercent: 0.12,
+  foodEnergyMaxPercent: 0.48,
   mutationRate: 0.07,
   crossoverSimilarity: 0.72,
-  reproductionThreshold: 105,
-  reproductionCost: 42,
-  childEnergy: 42,
+  reproductionThresholdPercent: 0.70,
+  asexualReproductionCostPercent: 0.28,
+  sexualReproductionCostPercent: 0.14,
+  childEnergyPercent: 0.28,
   predatorFactor: 1.9,
   maxFood: 50,
   foodSpawnRate: 6,
+  jumpEnergyPercent: 0.10,
+  jumpDistanceMultiplier: 3,
 };
 
 const state = {
@@ -57,6 +65,8 @@ const state = {
   lastTimestamp: 0,
   paused: false,
   benchmarking: false,
+  fastMode: false,
+  fastLoopHandle: null,
   nextFoodSpawn: 0,
   nextId: 1,
 };
@@ -64,19 +74,23 @@ const state = {
 const ui = {
   canvas: document.getElementById('world'),
   initialPopulation: document.getElementById('initialPopulation'),
-  initialEnergy: document.getElementById('initialEnergy'),
+  initialEnergyPercent: document.getElementById('initialEnergyPercent'),
   initialLife: document.getElementById('initialLife'),
   energyCost: document.getElementById('energyCost'),
-  foodEnergyMin: document.getElementById('foodEnergyMin'),
-  foodEnergyMax: document.getElementById('foodEnergyMax'),
+  baseEnergy: document.getElementById('baseEnergy'),
+  foodEnergyMinPercent: document.getElementById('foodEnergyMinPercent'),
+  foodEnergyMaxPercent: document.getElementById('foodEnergyMaxPercent'),
   mutationRate: document.getElementById('mutationRate'),
   crossoverSimilarity: document.getElementById('crossoverSimilarity'),
-  reproductionThreshold: document.getElementById('reproductionThreshold'),
-  reproductionCost: document.getElementById('reproductionCost'),
-  childEnergy: document.getElementById('childEnergy'),
+  reproductionThresholdPercent: document.getElementById('reproductionThresholdPercent'),
+  asexualReproductionCostPercent: document.getElementById('asexualReproductionCostPercent'),
+  sexualReproductionCostPercent: document.getElementById('sexualReproductionCostPercent'),
+  childEnergyPercent: document.getElementById('childEnergyPercent'),
   predatorFactor: document.getElementById('predatorFactor'),
   maxFood: document.getElementById('maxFood'),
   foodSpawnRate: document.getElementById('foodSpawnRate'),
+  jumpEnergyPercent: document.getElementById('jumpEnergyPercent'),
+  jumpDistanceMultiplier: document.getElementById('jumpDistanceMultiplier'),
   populationStat: document.getElementById('populationStat'),
   foodStat: document.getElementById('foodStat'),
   generationStat: document.getElementById('generationStat'),
@@ -85,6 +99,7 @@ const ui = {
   sexualStat: document.getElementById('sexualStat'),
   newSimulationBtn: document.getElementById('newSimulationBtn'),
   togglePauseBtn: document.getElementById('togglePauseBtn'),
+  fastModeBtn: document.getElementById('fastModeBtn'),
   benchmarkBtn: document.getElementById('benchmarkBtn'),
   balancedDefaultsBtn: document.getElementById('balancedDefaultsBtn'),
   tuningSummary: document.getElementById('tuningSummary'),
@@ -134,19 +149,23 @@ function getConfigFromControls() {
     worldWidth: WORLD_WIDTH,
     worldHeight: WORLD_HEIGHT,
     initialPopulation: Number(ui.initialPopulation.value),
-    initialEnergy: Number(ui.initialEnergy.value),
+    initialEnergyPercent: Number(ui.initialEnergyPercent.value),
     initialLife: Number(ui.initialLife.value),
     energyCost: Number(ui.energyCost.value),
-    foodEnergyMin: Number(ui.foodEnergyMin.value),
-    foodEnergyMax: Number(ui.foodEnergyMax.value),
+    baseEnergy: Number(ui.baseEnergy.value),
+    foodEnergyMinPercent: Number(ui.foodEnergyMinPercent.value),
+    foodEnergyMaxPercent: Number(ui.foodEnergyMaxPercent.value),
     mutationRate: Number(ui.mutationRate.value),
     crossoverSimilarity: Number(ui.crossoverSimilarity.value),
-    reproductionThreshold: Number(ui.reproductionThreshold.value),
-    reproductionCost: Number(ui.reproductionCost.value),
-    childEnergy: Number(ui.childEnergy.value),
+    reproductionThresholdPercent: Number(ui.reproductionThresholdPercent.value),
+    asexualReproductionCostPercent: Number(ui.asexualReproductionCostPercent.value),
+    sexualReproductionCostPercent: Number(ui.sexualReproductionCostPercent.value),
+    childEnergyPercent: Number(ui.childEnergyPercent.value),
     predatorFactor: Number(ui.predatorFactor.value),
     maxFood: Number(ui.maxFood.value),
     foodSpawnRate: Number(ui.foodSpawnRate.value),
+    jumpEnergyPercent: Number(ui.jumpEnergyPercent.value),
+    jumpDistanceMultiplier: Number(ui.jumpDistanceMultiplier.value),
   };
 }
 
@@ -181,7 +200,7 @@ function computeGeneSimilarity(a, b) {
   for (let i = 0; i < a.length; i += 1) {
     diff += Math.abs(a[i] - b[i]);
   }
-  const maxDistance = a.length * 6;
+  const maxDistance = a.length * 2;
   const similarity = 1 - diff / Math.max(maxDistance, 1);
   return clamp(similarity, 0, 1);
 }
@@ -229,11 +248,11 @@ function getGeneColor(genes) {
 }
 
 function getIndividualRadius(organism) {
-  return clamp(6 + organism.energy / 12, 6, 24);
+  return clamp(15* organism.energy /state.config.baseEnergy*state.config.initialEnergyPercent , 2, 30);
 }
 
 function createIndividual(x, y, genes = randomGenes(), config = state.config) {
-  const energy = config.initialEnergy ?? 80;
+  const energy = (config.initialEnergyPercent ?? 0.53) * (config.baseEnergy ?? 150);
   const life = config.initialLife ?? 180;
 
   const organism = {
@@ -437,25 +456,28 @@ function buildBenchmarkConfigs() {
     const variant = {
       ...DEFAULT_CONFIG,
       initialPopulation: Math.round(randomBetween(4, 80)),
-      initialEnergy: randomBetween(20, 220),
+      initialEnergyPercent: randomBetween(0.1, 1.5),
       initialLife: randomBetween(60, 500),
       energyCost: randomBetween(0.04, 1.0),
-      foodEnergyMin: randomBetween(4, 80),
-      foodEnergyMax: randomBetween(25, 200),
+      foodEnergyMinPercent: randomBetween(0.02, 0.5),
+      foodEnergyMaxPercent: randomBetween(0.15, 1.3),
       mutationRate: randomBetween(0.005, 0.35),
       crossoverSimilarity: randomBetween(0.35, 0.95),
-      reproductionThreshold: randomBetween(35, 220),
-      reproductionCost: randomBetween(8, 120),
-      childEnergy: randomBetween(10, 100),
+      reproductionThresholdPercent: randomBetween(0.2, 1.5),
+      asexualReproductionCostPercent: randomBetween(0.05, 0.8),
+      sexualReproductionCostPercent: randomBetween(0.02, 0.4),
+      childEnergyPercent: randomBetween(0.05, 0.7),
       predatorFactor: randomBetween(0.8, 4.0),
       maxFood: randomBetween(8, 140),
       foodSpawnRate: randomBetween(1, 25),
+      jumpEnergyPercent: randomBetween(0.03, 0.3),
+      jumpDistanceMultiplier: randomBetween(1, 6),
     };
 
-    if (variant.foodEnergyMax < variant.foodEnergyMin) {
-      const temp = variant.foodEnergyMin;
-      variant.foodEnergyMin = variant.foodEnergyMax;
-      variant.foodEnergyMax = temp;
+    if (variant.foodEnergyMaxPercent < variant.foodEnergyMinPercent) {
+      const temp = variant.foodEnergyMinPercent;
+      variant.foodEnergyMinPercent = variant.foodEnergyMaxPercent;
+      variant.foodEnergyMaxPercent = temp;
     }
 
     candidates.push(variant);
@@ -527,12 +549,12 @@ async function runBenchmark() {
 }
 
 function spawnFood(count = 30) {
-  const { foodEnergyMin, foodEnergyMax } = state.config;
+  const { foodEnergyMinPercent, foodEnergyMaxPercent, baseEnergy } = state.config;
   while (state.food.length < count) {
     state.food.push({
       x: randomBetween(20, state.config.worldWidth - 20),
       y: randomBetween(20, state.config.worldHeight - 20),
-      energy: randomBetween(foodEnergyMin, foodEnergyMax),
+      energy: randomBetween(foodEnergyMinPercent * baseEnergy, foodEnergyMaxPercent * baseEnergy),
       radius: 5,
     });
   }
@@ -566,7 +588,7 @@ function loadPopulationFromSave(save) {
       radius: 8,
       life: Number(entity.life ?? entity.maxLife ?? config.initialLife),
       maxLife: Number(entity.maxLife ?? entity.life ?? config.initialLife),
-      energy: Number(entity.energy ?? config.initialEnergy),
+      energy: Number(entity.energy ?? (config.initialEnergyPercent * config.baseEnergy)),
     };
     recovered.radius = getIndividualRadius(recovered);
     state.nextId = Math.max(state.nextId, recovered.id + 1);
@@ -583,19 +605,23 @@ function loadPopulationFromSave(save) {
 function applyConfigToInputs(config = state.config) {
   const activeConfig = config || DEFAULT_CONFIG;
   ui.initialPopulation.value = activeConfig.initialPopulation ?? DEFAULT_CONFIG.initialPopulation;
-  ui.initialEnergy.value = activeConfig.initialEnergy ?? DEFAULT_CONFIG.initialEnergy;
+  ui.initialEnergyPercent.value = activeConfig.initialEnergyPercent ?? DEFAULT_CONFIG.initialEnergyPercent;
   ui.initialLife.value = activeConfig.initialLife ?? DEFAULT_CONFIG.initialLife;
   ui.energyCost.value = activeConfig.energyCost ?? DEFAULT_CONFIG.energyCost;
-  ui.foodEnergyMin.value = activeConfig.foodEnergyMin ?? DEFAULT_CONFIG.foodEnergyMin;
-  ui.foodEnergyMax.value = activeConfig.foodEnergyMax ?? DEFAULT_CONFIG.foodEnergyMax;
+  ui.baseEnergy.value = activeConfig.baseEnergy ?? DEFAULT_CONFIG.baseEnergy;
+  ui.foodEnergyMinPercent.value = activeConfig.foodEnergyMinPercent ?? DEFAULT_CONFIG.foodEnergyMinPercent;
+  ui.foodEnergyMaxPercent.value = activeConfig.foodEnergyMaxPercent ?? DEFAULT_CONFIG.foodEnergyMaxPercent;
   ui.mutationRate.value = activeConfig.mutationRate ?? DEFAULT_CONFIG.mutationRate;
   ui.crossoverSimilarity.value = activeConfig.crossoverSimilarity ?? DEFAULT_CONFIG.crossoverSimilarity;
-  ui.reproductionThreshold.value = activeConfig.reproductionThreshold ?? DEFAULT_CONFIG.reproductionThreshold;
-  ui.reproductionCost.value = activeConfig.reproductionCost ?? DEFAULT_CONFIG.reproductionCost;
-  ui.childEnergy.value = activeConfig.childEnergy ?? DEFAULT_CONFIG.childEnergy;
+  ui.reproductionThresholdPercent.value = activeConfig.reproductionThresholdPercent ?? DEFAULT_CONFIG.reproductionThresholdPercent;
+  ui.asexualReproductionCostPercent.value = activeConfig.asexualReproductionCostPercent ?? DEFAULT_CONFIG.asexualReproductionCostPercent;
+  ui.sexualReproductionCostPercent.value = activeConfig.sexualReproductionCostPercent ?? DEFAULT_CONFIG.sexualReproductionCostPercent;
+  ui.childEnergyPercent.value = activeConfig.childEnergyPercent ?? DEFAULT_CONFIG.childEnergyPercent;
   ui.predatorFactor.value = activeConfig.predatorFactor ?? DEFAULT_CONFIG.predatorFactor;
   ui.maxFood.value = activeConfig.maxFood ?? DEFAULT_CONFIG.maxFood;
   ui.foodSpawnRate.value = activeConfig.foodSpawnRate ?? DEFAULT_CONFIG.foodSpawnRate;
+  ui.jumpEnergyPercent.value = activeConfig.jumpEnergyPercent ?? DEFAULT_CONFIG.jumpEnergyPercent;
+  ui.jumpDistanceMultiplier.value = activeConfig.jumpDistanceMultiplier ?? DEFAULT_CONFIG.jumpDistanceMultiplier;
 }
 
 function resetSimulation() {
@@ -654,16 +680,17 @@ function getNearestCreature(organism) {
 function buildInputVector(organism, nearestCreature, nearestFood) {
   const closestCreature = nearestCreature || null;
   const closestFood = nearestFood || null;
+  const baseEnergyNormalization = state.config.baseEnergy;
 
   return [
     closestCreature ? clamp(1 / (closestCreature.distance + 1), 0, 1) : 0,
-    closestCreature ? clamp(closestCreature.energy / 150, 0, 1) : 0,
+    closestCreature ? clamp(closestCreature.energy / baseEnergyNormalization, 0, 1) : 0,
     closestCreature ? closestCreature.similarity : 0,
     closestCreature ? clamp((Math.atan2(Math.sin(toRadians(closestCreature.angle - organism.angle)), Math.cos(toRadians(closestCreature.angle - organism.angle))) + Math.PI) / (2 * Math.PI), 0, 1) : 0.5,
     closestFood ? clamp(1 / (closestFood.distance + 1), 0, 1) : 0,
-    closestFood ? clamp(closestFood.energy / 150, 0, 1) : 0,
+    closestFood ? clamp(closestFood.energy / baseEnergyNormalization, 0, 1) : 0,
     closestFood ? clamp((Math.atan2(Math.sin(toRadians(closestFood.angle - organism.angle)), Math.cos(toRadians(closestFood.angle - organism.angle))) + Math.PI) / (2 * Math.PI), 0, 1) : 0.5,
-    clamp(organism.energy / 200, 0, 1),
+    clamp(organism.energy / baseEnergyNormalization, 0, 1),
     clamp(organism.life / organism.maxLife, 0, 1),
   ];
 }
@@ -685,7 +712,7 @@ function evaluateOrganism(organism) {
 function steerOrganism(organism) {
   const { outputs, nearestCreature, nearestFood } = evaluateOrganism(organism);
 
-  const [turn, thrust, seekFood, flee, attack, asexual, sexual] = outputs;
+  const [turn, thrust, seekFood, flee, attack, asexual, sexual, jump] = outputs;
   const turnAmount = (turn - 0.5) * 2;
   organism.angle += turnAmount * 0.18;
 
@@ -726,6 +753,17 @@ function steerOrganism(organism) {
     organism.lastAction = 'move';
   }
 
+  if (jump > 0.6) {
+    const jumpEnergyCost = organism.energy * state.config.jumpEnergyPercent;
+    if (jumpEnergyCost > 0) {
+      const jumpDistance = organism.radius * state.config.jumpDistanceMultiplier;
+      moveX += Math.cos(organism.angle) * jumpDistance;
+      moveY += Math.sin(organism.angle) * jumpDistance;
+      organism.energy -= jumpEnergyCost;
+      organism.lastAction = 'jump';
+    }
+  }
+
   organism.x += moveX;
   organism.y += moveY;
   organism.x = clamp(organism.x, 0, state.config.worldWidth);
@@ -734,7 +772,8 @@ function steerOrganism(organism) {
   organism.energy -= state.config.energyCost;
   organism.life -= 0.35;
 
-  if (organism.energy > state.config.reproductionThreshold && asexual > 0.7) {
+  const reproductionThreshold = state.config.reproductionThresholdPercent * state.config.baseEnergy;
+  if (organism.energy > reproductionThreshold && asexual > 0.7) {
     reproduceAssexually(organism);
   }
 
@@ -746,7 +785,8 @@ function steerOrganism(organism) {
 }
 
 function reproduceAssexually(parent) {
-  if (parent.energy < state.config.reproductionCost) return;
+  const asexualCost = state.config.asexualReproductionCostPercent * state.config.baseEnergy;
+  if (parent.energy < asexualCost) return;
 
   const childGenes = mutateGenes(parent.genes.slice(), state.config.mutationRate);
   const child = createIndividual(
@@ -756,10 +796,11 @@ function reproduceAssexually(parent) {
     state.config,
   );
 
-  child.energy = state.config.childEnergy;
+  const childEnergyAbsolute = state.config.childEnergyPercent * state.config.baseEnergy;
+  child.energy = childEnergyAbsolute;
   child.life = state.config.initialLife;
   child.maxLife = state.config.initialLife;
-  parent.energy -= state.config.reproductionCost;
+  parent.energy -= asexualCost;
   state.population.push(child);
   state.generation += 1;
   state.asexualReproductionCount += 1;
@@ -778,7 +819,8 @@ function reproduceSexually(parent) {
     }
   }
 
-  if (!partner || parent.energy < state.config.reproductionCost || partner.energy < state.config.reproductionCost) {
+  const sexualCost = state.config.sexualReproductionCostPercent * state.config.baseEnergy;
+  if (!partner || parent.energy < sexualCost || partner.energy < sexualCost) {
     return;
   }
 
@@ -791,8 +833,8 @@ function reproduceSexually(parent) {
     state.config,
   );
 
-  const sexualCost = state.config.reproductionCost / 2;
-  child.energy = state.config.childEnergy;
+  const childEnergyAbsolute = state.config.childEnergyPercent * state.config.baseEnergy;
+  child.energy = childEnergyAbsolute;
   child.life = state.config.initialLife;
   child.maxLife = state.config.initialLife;
   parent.energy -= sexualCost;
@@ -803,13 +845,13 @@ function reproduceSexually(parent) {
 }
 
 function updateFood() {
-  const { foodSpawnRate, maxFood } = state.config;
+  const { foodSpawnRate, maxFood, baseEnergy, foodEnergyMinPercent, foodEnergyMaxPercent } = state.config;
   state.nextFoodSpawn -= 1;
   if (state.food.length < maxFood && state.nextFoodSpawn <= 0) {
     state.food.push({
       x: randomBetween(20, state.config.worldWidth - 20),
       y: randomBetween(20, state.config.worldHeight - 20),
-      energy: randomBetween(state.config.foodEnergyMin, state.config.foodEnergyMax),
+      energy: randomBetween(foodEnergyMinPercent * baseEnergy, foodEnergyMaxPercent * baseEnergy),
       radius: 5,
     });
     state.nextFoodSpawn = foodSpawnRate;
@@ -854,6 +896,41 @@ function updateStats() {
   ui.predationStat.textContent = `Predação: ${state.predationCount}`;
   ui.asexualStat.textContent = `Reprodução assexuada: ${state.asexualReproductionCount}`;
   ui.sexualStat.textContent = `Reprodução sexuada: ${state.sexualReproductionCount}`;
+}
+
+function setFastMode(enabled) {
+  state.fastMode = enabled;
+  if (state.fastLoopHandle) {
+    clearTimeout(state.fastLoopHandle);
+    state.fastLoopHandle = null;
+  }
+
+  if (enabled) {
+    state.paused = false;
+    ui.fastModeBtn.textContent = 'Voltar ao modo normal';
+    ui.fastModeBtn.classList.add('active');
+
+    const runFastCycle = () => {
+      if (!state.fastMode) return;
+
+      const steps = 80;
+      for (let i = 0; i < steps; i += 1) {
+        updateFood();
+        updatePopulation();
+      }
+
+      // Atualizar estatísticas a cada ciclo
+      updateStats();
+
+      state.fastLoopHandle = setTimeout(runFastCycle, 0);
+    };
+
+    runFastCycle();
+    return;
+  }
+
+  ui.fastModeBtn.textContent = 'Modo treino rápido';
+  ui.fastModeBtn.classList.remove('active');
 }
 
 function drawFood() {
@@ -902,6 +979,12 @@ function render() {
 
 function tick(timestamp) {
   if (state.benchmarking) {
+    state.lastTimestamp = timestamp;
+    requestAnimationFrame(tick);
+    return;
+  }
+
+  if (state.fastMode) {
     state.lastTimestamp = timestamp;
     requestAnimationFrame(tick);
     return;
@@ -994,7 +1077,12 @@ function loadSelectedSave() {
 function setupEvents() {
   ui.newSimulationBtn.addEventListener('click', () => {
     setConfigFromInputs();
+    setFastMode(false);
     resetSimulation();
+  });
+
+  ui.fastModeBtn.addEventListener('click', () => {
+    setFastMode(!state.fastMode);
   });
 
   ui.benchmarkBtn.addEventListener('click', () => {
@@ -1014,6 +1102,11 @@ function setupEvents() {
   });
 
   ui.togglePauseBtn.addEventListener('click', () => {
+    if (state.fastMode) {
+      setFastMode(false);
+      return;
+    }
+
     state.paused = !state.paused;
     ui.togglePauseBtn.textContent = state.paused ? 'Continuar' : 'Pausar';
   });

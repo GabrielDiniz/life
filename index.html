@@ -26,10 +26,10 @@
             <div class="field-wrap">
               <label>
                 <span class="label-row">
-                  <span>Energia inicial</span>
-                  <span class="info-badge" title="Determina a energia com que cada ser começa, afetando sua sobrevivência e a chance de reproduzir cedo.">i</span>
+                  <span>Energia inicial (%)</span>
+                  <span class="info-badge" title="Percentual da energia base que cada ser começa (0-1); afeta sobrevivência e chance de reprodução cedo.">i</span>
                 </span>
-                <input id="initialEnergy" type="number" min="10" max="200" value="80" />
+                <input id="initialEnergyPercent" type="number" min="0" max="1" step="0.01" value="0.53" />
               </label>
             </div>
             <div class="field-wrap">
@@ -53,10 +53,19 @@
             <div class="field-wrap">
               <label>
                 <span class="label-row">
+                  <span>Energia base (normalização)</span>
+                  <span class="info-badge" title="Valor de referência para normalizar todas as energias na rede neural; todos os inputs de energia são divididos por este valor.">i</span>
+                </span>
+                <input id="baseEnergy" type="number" min="50" max="300" value="150" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
                   <span>Energia da comida min</span>
                   <span class="info-badge" title="Energia mínima da comida gerada; influencia quanto a população pode se sustentar sem morrer de fome.">i</span>
                 </span>
-                <input id="foodEnergyMin" type="number" min="5" max="200" value="20" />
+                <input id="foodEnergyMinPercent" type="number" min="0" max="1" step="0.01" value="0.13" />
               </label>
             </div>
             <div class="field-wrap">
@@ -65,7 +74,7 @@
                   <span>Energia da comida max</span>
                   <span class="info-badge" title="Energia máxima das comidas, definindo o quão rica a alimentação pode ser em cada ponto do mapa.">i</span>
                 </span>
-                <input id="foodEnergyMax" type="number" min="10" max="300" value="80" />
+                <input id="foodEnergyMaxPercent" type="number" min="0" max="1" step="0.01" value="0.53" />
               </label>
             </div>
             <div class="field-wrap">
@@ -92,16 +101,25 @@
                   <span>Limite de reprodução</span>
                   <span class="info-badge" title="Energia mínima para gerar uma reprodução assexuada; controla quando a população cresce rapidamente.">i</span>
                 </span>
-                <input id="reproductionThreshold" type="number" min="20" max="300" value="110" />
+                <input id="reproductionThresholdPercent" type="number" min="0" max="1" step="0.01" value="0.73" />
               </label>
             </div>
             <div class="field-wrap">
               <label>
                 <span class="label-row">
-                  <span>Custo reprodução</span>
-                  <span class="info-badge" title="Energia gasta na reprodução; impacto direto no ciclo de vida e na sobrevivência dos pais.">i</span>
+                  <span>Custo reprodução assexuada</span>
+                  <span class="info-badge" title="Energia gasta na reprodução assexuada; impacto direto no ciclo de vida e na sobrevivência do pai.">i</span>
                 </span>
-                <input id="reproductionCost" type="number" min="0" max="200" value="45" />
+                <input id="asexualReproductionCostPercent" type="number" min="0" max="1" step="0.01" value="0.30" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Custo reprodução sexuada</span>
+                  <span class="info-badge" title="Energia gasta em reprodução sexuada por cada pai; impacto na viabilidade do cruzamento.">i</span>
+                </span>
+                <input id="sexualReproductionCostPercent" type="number" min="0" max="1" step="0.01" value="0.15" />
               </label>
             </div>
             <div class="field-wrap">
@@ -110,7 +128,7 @@
                   <span>Energia da cria</span>
                   <span class="info-badge" title="Energia inicial do descendente; define quão forte a nova geração começa na simulação.">i</span>
                 </span>
-                <input id="childEnergy" type="number" min="10" max="200" value="45" />
+                <input id="childEnergyPercent" type="number" min="0" max="1" step="0.01" value="0.30" />
               </label>
             </div>
             <div class="field-wrap">
@@ -140,12 +158,31 @@
                 <input id="foodSpawnRate" type="number" min="0" max="100" value="5" />
               </label>
             </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Custo do salto (%)</span>
+                  <span class="info-badge" title="Percentual da energia atual consumido quando o salto é ativado.">i</span>
+                </span>
+                <input id="jumpEnergyPercent" type="number" min="0" max="1" step="0.01" value="0.10" />
+              </label>
+            </div>
+            <div class="field-wrap">
+              <label>
+                <span class="label-row">
+                  <span>Distância do salto (tamanhos)</span>
+                  <span class="info-badge" title="Quantidade de tamanhos do indivíduo percorrida pelo salto.">i</span>
+                </span>
+                <input id="jumpDistanceMultiplier" type="number" min="1" max="10" step="0.1" value="3" />
+              </label>
+            </div>
           </div>
         </div>
 
         <div class="section actions">
           <button id="newSimulationBtn">Nova população</button>
           <button id="togglePauseBtn">Pausar</button>
+          <button id="fastModeBtn" class="secondary">Modo treino rápido</button>
         </div>
 
         <div class="section">
